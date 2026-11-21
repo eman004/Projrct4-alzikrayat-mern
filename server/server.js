@@ -3,6 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/authRoutes');
 const photoRoutes = require('./routes/photoRoutes');
@@ -10,6 +12,37 @@ const commentRoutes = require('./routes/commentRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.io configuration for real-time comments (Track D)
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Make io accessible inside controllers via req.app.get('io')
+app.set('io', io);
+
+// Handle Socket.io connections and photo-specific rooms
+io.on('connection', (socket) => {
+  console.log('Client connected to Socket.io:', socket.id);
+
+  socket.on('joinPhotoRoom', (photoId) => {
+    socket.join(`photo_${photoId}`);
+  });
+
+  socket.on('leavePhotoRoom', (photoId) => {
+    socket.leave(`photo_${photoId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/alzikrayat_mern';
 
@@ -47,12 +80,12 @@ app.use((req, res) => {
 // Centralized error handling middleware
 app.use(errorHandler);
 
-// Connect to MongoDB and start Express server
+// Connect to MongoDB and start HTTP + Socket.io server
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB successfully');
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   })

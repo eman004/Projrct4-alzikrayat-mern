@@ -31,6 +31,12 @@ const createComment = async (req, res, next) => {
       'firstName lastName'
     );
 
+    // Emit real-time comment event to all clients viewing this photo room 
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`photo_${photoId}`).emit('newComment', populatedComment);
+    }
+
     res.status(201).json(populatedComment);
   } catch (err) {
     next(err);

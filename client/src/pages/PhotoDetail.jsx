@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext.jsx';
 import CommentForm from '../components/CommentForm.jsx';
 
@@ -33,11 +34,49 @@ function PhotoDetail() {
     fetchPhotoDetail();
   }, [id]);
 
+  // Real-Time WebSocket connection via Socket.io
+  useEffect(() => {
+    const socket = io('http://localhost:3000');
+
+    // Join the room specific to this photo
+    socket.emit('joinPhotoRoom', id);
+
+    // Listen for new comments broadcast to this photo room
+    socket.on('newComment', (incomingComment) => {
+      setPhoto((prev) => {
+        if (!prev) return prev;
+        const alreadyExists = (prev.comments || []).some(
+          (c) => c._id === incomingComment._id
+        );
+        if (alreadyExists) return prev;
+
+        return {
+          ...prev,
+          comments: [...(prev.comments || []), incomingComment],
+        };
+      });
+    });
+
+    // Cleanup on component unmount
+    return () => {
+      socket.emit('leavePhotoRoom', id);
+      socket.disconnect();
+    };
+  }, [id]);
+
   const handleCommentAdded = (newComment) => {
-    setPhoto((prev) => ({
-      ...prev,
-      comments: [...(prev.comments || []), newComment],
-    }));
+    setPhoto((prev) => {
+      if (!prev) return prev;
+      const alreadyExists = (prev.comments || []).some(
+        (c) => c._id === newComment._id
+      );
+      if (alreadyExists) return prev;
+
+      return {
+        ...prev,
+        comments: [...(prev.comments || []), newComment],
+      };
+    });
   };
 
   const handleDeletePhoto = async () => {
