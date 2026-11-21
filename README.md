@@ -1,62 +1,36 @@
-# Alzikrayat - MERN Edition
+# Alzikrayat — MERN Photo Sharing Platform (Project 4 Bonus: Real-Time WebSockets)
 
-Full-Stack Photo Sharing Web Application built with **MongoDB, Express.js, React.js (Vite), and Node.js** following the 3-Tier Architecture and RESTful API design principles.
+**Alzikrayat** is a full-stack MERN (MongoDB, Express.js, React.js, Node.js) photo-sharing web application built with a decoupled 3-Tier Architecture.
+
+---
+
+## Project 4 (Bonus) — Selected Track
+* **Selected Track:** **Track D: Real-Time WebSocket (Socket.io)**
+* **Rationale:** Enhances the commenting engine from Project 3 by enabling instant, bidirectional communication. When a user posts a comment on a photo, all other users currently viewing that same photo receive the comment immediately in real time without refreshing the page.
+
+### Key Real-Time Features Implemented
+* **Express + HTTP + Socket.io Integration:** Attached `Socket.io` to the Node.js HTTP server alongside Express REST endpoints.
+* **Room-Based Broadcasting:** Users automatically join a dedicated photo room (`photo_<photoId>`) upon opening a photo detail page (`joinPhotoRoom`), ensuring real-time events (`newComment`) are broadcast strictly to viewers of that specific photo.
+* **Client-Side Lifecycle & Deduplication:** Managed socket connections inside React's `useEffect` in `PhotoDetail.jsx`, deduplicating incoming comments by `_id` and cleanly leaving the room and disconnecting on component unmount (`leavePhotoRoom` & `socket.disconnect()`).
+
+---
 
 ## Project Structure
-
 ```text
 alzikrayat-mern/
-├── server/          # Express.js REST API & Mongoose Models
-└── client/          # React.js (Vite) Frontend SPA
-```
-
-## Prerequisites
-
-- Node.js (v18+ recommended)
-- MongoDB (Local instance or MongoDB Atlas URI)
-
-## Setup & Running Locally
-
-### 1. Backend Setup (`server/`)
-
-```bash
-cd server
-npm install
-```
-
-Create a `.env` file inside `server/` (you can copy `server/.env.example`):
-
-```env
-PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/alzikrayat_mern
-```
-
-Start the backend server:
-
-```bash
-npm run dev
-```
-
-The API server runs on `http://localhost:3000`.
-
-### 2. Frontend Setup (`client/`)
-
-Open a new terminal window:
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-The React frontend runs on `http://localhost:5173`.
-
-## Key API Endpoints
-
-- `POST /api/auth/register` - Register a new user (hashes password with bcrypt)
-- `POST /api/auth/login` - Authenticate user and return public profile
-- `GET /api/photos` - Retrieve all photos with uploader details
-- `GET /api/photos/:id` - Retrieve a single photo with its comments
-- `POST /api/photos` - Upload a new photo (requires logged-in user)
-- `DELETE /api/photos/:id` - Delete a photo (owner-only validation)
-- `POST /api/photos/:id/comments` - Add a comment to a photo (requires logged-in user)
+├── client/                 # React + Vite Frontend (Port 5173)
+│   ├── src/
+│   │   ├── components/     # Navbar, CommentForm
+│   │   ├── context/        # AuthContext (React Context + localStorage)
+│   │   ├── pages/          # Home, Gallery, PhotoDetail (Socket.io client), LoginRegister
+│   │   └── styles/         # Mobile-First responsive CSS
+│   └── package.json
+├── server/                 # Node.js + Express + Socket.io Backend (Port 3000)
+│   ├── config/             # MongoDB connection
+│   ├── controllers/        # authController, photoController, commentController (Socket emitter)
+│   ├── middleware/         # Joi validation, Multer upload, errorHandler
+│   ├── models/             # User, Photo, Comment Mongoose schemas
+│   ├── routes/             # REST API routes
+│   ├── uploads/            # Uploaded image storage
+│   └── server.js           # Express + Socket.io server entry point
+└── README.md
